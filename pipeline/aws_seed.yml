@@ -1,0 +1,543 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: a reference to the project for naming conventions
+  CodePipelineS3BucketName:
+    Type: String
+    Description: The name of the S3 bucket to create that will be used to store artifacts from CodePipeline execution runs.
+  CloudFormationDeployActionRoleName:
+    Type: String
+    Description: The name of the IAM role that will be created to run the CloudFormation deployment action as.
+  CodePipelineRoleName:
+    Type: String
+    Description: The name of the IAM role that will be created for the CodePipeline to use.
+  CodePipelineName:
+    Type: String
+    Description: The name of the CodePipeline to create.
+  StageAdministerPipelineStackName:
+    Type: String
+    Description: The name of this stack that is creating the pipeline. If the names do not match then the pipeline will not be able to update itself.
+  SnowflakeUsername:
+    Type: String
+    Description: "Username for snowflake service user"
+  SnowflakeAccount:
+    Type: String
+    Description: "Account name for snowflake"
+  SnowflakeWarehouse:
+    Type: String
+    Description: "Default warehouse for snowflake operations"
+  SnowflakeMigrationDatabaseName:
+    Type: String
+    Description: the database name used for db migration
+  SnowflakeRole:
+    Type: String
+    Description: The role name in snowflake used by pipeline
+  CodeBuildRoleName:
+    Type: String
+    Description: Default role name for codebuild
+  CodeBuildProjectBuildSnowflakeDocker:
+    Type: String
+    Description: Name of the codebuild project used to build snowsql cli docker image
+  
+Resources:
+  CodeCommitRepository:
+    Type: 'AWS::CodeCommit::Repository'
+    Properties:
+      RepositoryName: !Ref ProjectName
+      RepositoryDescription: !Join [' ', [!Ref ProjectName, 'CodeCommit Repository']]
+
+  CodePipelineBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Sub "${CodePipelineS3BucketName}-${AWS::AccountId}-${AWS::Region}"
+
+  CodePipelineBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CodePipelineBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: ["s3:*"]
+            Effect: Allow
+            Resource:
+              - !Sub arn:aws:s3:::${CodePipelineS3BucketName}
+              - !Sub arn:aws:s3:::${CodePipelineS3BucketName}/*
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/${CodePipelineRoleName}"
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/${CloudFormationDeployActionRoleName}"
+          - Sid: DenyUnEncryptedObjectUploads
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:PutObject"
+            Resource: [!Join ["", [!GetAtt CodePipelineBucket.Arn, "/*"]]]
+            Condition:
+              StringNotEquals:
+                "s3:x-amz-server-side-encryption": ["AES256", "aws:kms"]
+          - Sid: DenyUnencryptedObjectUploads
+            Effect: Deny
+            Principal: "*"
+            Action: s3:PutObject
+            Resource: [!Join ["", [!GetAtt CodePipelineBucket.Arn, "/*"]]]
+            Condition:
+              "Null":
+                s3:x-amz-server-side-encryption: true
+          - Sid: DenyInsecureConnections
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: [!Join ["", [!GetAtt CodePipelineBucket.Arn, "/*"]]]
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+
+  CodepipelineKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "KMS Key used to encrypt codepipeline bucket"
+      Enabled: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "KmsKeyPolicy"
+        Statement:
+          - Sid: Enable Administration of the CMK
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+                - !GetAtt CloudFormationDeployActionRole.Arn
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: Allow S3 access to generate data keys
+            Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: "kms:GenerateDataKey*"
+            Resource: "*"
+
+      KeyUsage: ENCRYPT_DECRYPT
+
+  CodepipelineKmsKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${ProjectName}-codepipeline-key"
+      TargetKeyId: !Ref CodepipelineKmsKey
+
+  CloudFormationDeployActionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              Service: [cloudformation.amazonaws.com]
+        Version: "2012-10-17"
+      Path: /
+      Policies:
+        - PolicyName: CloudFormationRole
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: 'AdministerCloudformationAndiam'
+                Action:
+                  - "cloudformation:CreateStack"
+                  - "cloudformation:DeleteStack"
+                  - "cloudformation:DescribeStacks"
+                  - "cloudformation:DescribeStackEvents"
+                  - "cloudformation:ValidateTemplate"
+                  - "cloudformation:GetTemplateSummary"
+                  - "cloudformation:SetStackPolicy"
+                  - "cloudformation:UpdateStack"
+                  - "iam:AttachRolePolicy"
+                  - "iam:CreatePolicy"
+                  - "iam:CreatePolicyVersion"
+                  - "iam:CreateRole"
+                  - "iam:DeletePolicy"
+                  - "iam:DeletePolicyVersion"
+                  - "iam:DeleteRole"
+                  - "iam:DeleteRolePolicy"
+                  - "iam:DetachRolePolicy"
+                  - "iam:GetPolicy"
+                  - "iam:GetRole"
+                  - "iam:ListPolicyVersions"
+                  - "iam:ListRoles"
+                  - "iam:PassRole"
+                  - "iam:PutRolePolicy"
+                Effect: Allow
+                Resource: "*"
+              - Sid: 'AdministerS3AndKMS'
+                Action:
+                  - "kms:DescribeKey"
+                  - "kms:CreateGrant"
+                  - "kms:DeleteGrant"
+                  - "kms:GenerateDataKey*"
+                  - "kms:Decrypt"
+                  - "kms:DescribeKey"
+                  - "kms:Encrypt"
+                  - "kms:ReEncrypt*"
+                  - "s3:CreateBucket"
+                  - "s3:DeleteBucket"
+                  - "s3:DeleteBucketEncryption"
+                  - "s3:DeleteBucketPolicy"
+                  - "s3:DeleteObject"
+                  - "s3:DescribeBucketPolicy"
+                  - "s3:GetBucketEncryption"
+                  - "s3:GetBucketPolicy"
+                  - "s3:GetBucketPolicyStatus"
+                  - "s3:GetEncryptionConfiguration"
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                  - "s3:PutBucketPolicy"
+                  - "s3:PutEncryptionConfiguration"
+                  - "s3:SetBucketEncryption"
+                Effect: Allow
+                Resource: ['*']
+              - Sid: 'AdministerRepoAndPipeline'
+                Action:
+                  - "codepipeline:CreatePipeline"
+                  - "codepipeline:DeletePipeline"
+                  - "codepipeline:GetPipeline"
+                  - "codepipeline:GetPipelineState"
+                  - "codepipeline:StartPipelineExecution"
+                  - "codepipeline:UpdatePipeline"
+                Effect: Allow
+                Resource: ['*']
+              - Sid: 'AdministerCodeBuild'
+                Action:
+                  - 'codebuild:CreateProject'
+                  - 'codebuild:CreateReport'
+                  - 'codebuild:CreateReportGroup'
+                  - 'codebuild:DeleteProject'
+                  - 'codebuild:DeleteReport'
+                  - 'codebuild:DeleteReportGroup'
+                  - 'codebuild:DeleteResourcePolicy'
+                  - 'codebuild:GetResourcePolicy'
+                  - 'codebuild:ListProjects'
+                  - 'codebuild:ListReportGroups'
+                  - 'codebuild:ListReports'
+                  - 'codebuild:PutResourcePolicy'
+                  - 'codebuild:UpdateProject'
+                  - 'codebuild:UpdateReport'
+                  - 'codebuild:UpdateReportGroup'
+                Effect: Allow
+                Resource: ['*']
+              - Sid: 'AdministerCodeCommit'
+                Action:
+                  - 'codecommit:CreateRepository'
+                  - 'codecommit:DeleteRepository'
+                  - 'codecommit:GetRepository'
+                  - 'codecommit:ListRepositories'
+                  - 'codecommit:UpdateRepositoryDescription'
+                  - 'codecommit:UpdateRepositoryName'
+                Effect: Allow
+                Resource: ['*']
+              - Sid: 'LogsAndMonitoringAccess'
+                Action:
+                  - "cloudwatch:PutMetricData"
+                  - "cloudwatch:GetMetricData"
+                  - "cloudwatch:GetMetricStatistics"
+                  - "cloudwatch:ListMetrics"
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:DescribeLogStreams"
+                  - "logs:PutLogEvents"
+                  - "logs:GetLogEvents"
+                Effect: Allow
+                Resource: ['*']
+      RoleName: !Ref CloudFormationDeployActionRoleName
+
+  CodePipelineRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: codepipeline-service
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                  - "s3:CreateBucket"
+                  - "s3:DeleteBucket"
+                  - "s3:DeleteBucketEncryption"
+                  - "s3:DeleteBucketPolicy"
+                  - "s3:DeleteObject"
+                  - "s3:DescribeBucketPolicy"
+                  - "s3:GetBucketEncryption"
+                  - "s3:GetBucketPolicy"
+                  - "s3:GetBucketPolicyStatus"
+                  - "s3:GetBucketVersioning"
+                  - "s3:GetEncryptionConfiguration"
+                  - "s3:GetObject"
+                  - "s3:GetObjectVersion"
+                  - "s3:ListBucket"
+                  - "s3:PutBucketPolicy"
+                  - "s3:PutEncryptionConfiguration"
+                  - "s3:PutObject"
+                  - "s3:SetBucketEncryption"
+                  - cloudformation:GetTemplate
+                  - cloudformation:DescribeStackResource
+                  - cloudformation:DescribeStackResources
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStacks
+                  - cloudformation:UpdateStack
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteStack
+                  - "kms:Decrypt"
+                  - "kms:DescribeKey"
+                  - "kms:Encrypt"
+                  - "kms:GenerateDataKey*"
+                  - "kms:ReEncrypt*"
+                  - "iam:PassRole"
+                Resource: "*"
+                Effect: Allow
+            Version: 2012-10-17
+      RoleName: !Ref CodePipelineRoleName
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref CodeBuildRoleName
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: codebuild-service
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: 'S3PermissionsGranted'
+                Effect: 'Allow'
+                Action:
+                  - 's3:CreateMultipartUpload'
+                  - 's3:GetObject'
+                  - 's3:ListBucket'
+                  - 's3:ListBucketVersions'
+                  - 's3:PutObject'
+                Resource: '*'
+              - Sid: "CodeCommitPermissions"
+                Effect: "Allow"
+                Action:
+                  - codecommit:GetBranch
+                  - codecommit:GetCommit
+                  - codecommit:UploadArchive
+                  - codecommit:GetUploadArchiveStatus
+                  - codecommit:CancelUploadArchive
+                Resource: "*"
+              - Sid: 'CloudWatchLogsPermissionsGranted'
+                Effect: 'Allow'
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:DeleteLogGroup'
+                  - 'logs:DeleteLogStream'
+                  - 'logs:DeleteRetentionPolicy'
+                  - 'logs:DescribeLogGroups'
+                  - 'logs:PutLogEvents'
+                  - 'logs:PutRetentionPolicy'
+                Resource: '*'
+              - Sid: 'KMSPermissionsGranted'
+                Effect: Allow
+                Action:
+                  - 'kms:Decrypt'
+                  - 'kms:DescribeKey'
+                  - 'kms:Encrypt'
+                  - 'kms:GenerateDataKey*'
+                  - 'kms:ReEncrypt*'
+                Resource:
+                  - '*'
+              - Sid: 'CloudWatchEventsPermissionsGranted'
+                Effect: Allow
+                Action:
+                  - 'events:DeleteRule'
+                  - 'events:DescribeRule'
+                  - 'events:DisableRule'
+                  - 'events:EnableRule'
+                  - 'events:ListRuleNamesByTarget'
+                  - 'events:ListRules'
+                  - 'events:ListTagsForResource'
+                  - 'events:ListTargetsByRule'
+                  - 'events:PutRule'
+                  - 'events:PutTargets'
+                  - 'events:RemoveTargets'
+                  - 'events:TagResource'
+                  - 'events:UntagResource'
+                Resource:
+                  - '*'
+              - Sid: 'EcrPermissionsGranted'
+                Effect: Allow
+                Action:
+                  - 'ecr:BatchCheckLayerAvailability'
+                  - 'ecr:BatchGetImage'
+                  - 'ecr:CompleteLayerUpload'
+                  - 'ecr:GetAuthorizationToken'
+                  - 'ecr:GetDownloadUrlForLayer'
+                  - 'ecr:InitiateLayerUpload'
+                  - 'ecr:PutImage'
+                  - 'ecr:UploadLayerPart'
+                Resource:
+                  - '*'
+              - Effect: Allow
+                Action: 
+                  - "secretsmanager:GetSecretValue"
+                Resource: 
+                  - <The arn to the secrets manager that holds Snowflake Password>
+
+  CodeBuildProjectDeploySnowflake:
+    Type: "AWS::CodeBuild::Project"
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Description: Deploy snowflake infrastructure
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${CodeBuildProjectBuildSnowflakeDocker}:latest"
+        EnvironmentVariables:
+          - Name: REGION
+            Value: !Ref AWS::Region
+          - Name: SNOWFLAKE_USER
+            Value: !Ref SnowflakeUsername
+          - Name: SNOWFLAKE_ACCOUNT
+            Value: !Ref SnowflakeAccount
+          - Name: SNOWFLAKE_WAREHOUSE
+            Value: !Ref SnowflakeWarehouse
+          - Name: SNOWFLAKE_MIGRATION_DB_NAME
+            Value: !Ref SnowflakeMigrationDatabaseName
+          - Name: SNOWFLAKE_ROLE
+            Value: !Ref SnowflakeRole
+      Name: !Sub "${ProjectName}-deploy-snowflake"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: pipeline/buildspec.yml
+      TimeoutInMinutes: 10
+
+  CodePipeline:
+    Type: "AWS::CodePipeline::Pipeline"
+    Properties:
+      ArtifactStore:
+        Type: S3
+        Location: !Ref CodePipelineBucket
+        EncryptionKey:
+          Type: KMS
+          Id: !Ref CodepipelineKmsKey
+      Name: !Ref CodePipelineName
+      RestartExecutionOnUpdate: true
+      RoleArn:
+        !Join [
+          "",
+          [
+            "arn:aws:iam::",
+            !Ref "AWS::AccountId",
+            ":role/",
+            !Ref CodePipelineRole,
+          ],
+        ]
+      Stages:
+        - Name: Source
+          Actions:
+            - InputArtifacts: []
+              Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: '1'
+                Provider: CodeCommit
+              OutputArtifacts:
+                - Name:  !Join ["", [!Ref ProjectName, "Source"]]
+              Configuration:
+                BranchName: 'master'
+                RepositoryName: !GetAtt CodeCommitRepository.Name
+              RunOrder: 1
+        - Name: "AdministerPipeline"
+          Actions:
+            - Name: "AdministerPipeline"
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: REPLACE_ON_FAILURE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt [CloudFormationDeployActionRole, Arn]
+                StackName: !Ref StageAdministerPipelineStackName
+                TemplateConfiguration:
+                  !Join [
+                    "",
+                    [!Ref ProjectName, "Source", "::pipeline/aws_seed.json"],
+                  ]
+                TemplatePath:
+                  !Join [
+                    "",
+                    [!Ref ProjectName, "Source", "::pipeline/aws_seed.yml"],
+                  ]
+              InputArtifacts:
+                - Name: !Join ["", [!Ref ProjectName, "Source"]]
+              RunOrder: 1
+        - Name: "DeploySnowflake"
+          Actions:
+            - Name: "DeploySnowflake"
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref CodeBuildProjectDeploySnowflake
+              InputArtifacts:
+                - Name: !Join ["", [!Ref ProjectName, "Source"]]
+              RunOrder: 10
+Outputs:
+  CodePipelineBucketArn:
+    Description: CodePipeline S3 Bucket Arn
+    Export:
+      Name: !Join ["", [!Ref "AWS::StackName", "CodePipelineBucketArn"]]
+    Value: !GetAtt CodePipelineBucket.Arn
+  CodePipelineBucketDomainName:
+    Description: CodePipeline S3 Bucket DomainName
+    Export:
+      Name: !Join ["", [!Ref "AWS::StackName", "CodePipelineBucketDomainName"]]
+    Value: !GetAtt CodePipelineBucket.DomainName
+  CodePipelineBucketWebsiteURL:
+    Description: CodePipeline S3 Bucket WebsiteURL
+    Export:
+      Name: !Join ["", [!Ref "AWS::StackName", "CodePipelineBucketWebsiteURL"]]
+    Value: !GetAtt CodePipelineBucket.WebsiteURL
+  CloudFormationDeployActionRoleArn:
+    Description: CloudFormationDeployActionRole Arn
+    Export:
+      Name:
+        !Join ["", [!Ref "AWS::StackName", "CloudFormationDeployActionRoleArn"]]
+    Value: !GetAtt CloudFormationDeployActionRole.Arn
+  CodePipelineRoleArn:
+    Description: CodePipelineRole Arn
+    Export:
+      Name: !Join ["", [!Ref "AWS::StackName", "CodePipelineRoleArn"]]
+    Value: !GetAtt CodePipelineRole.Arn
+  CodePipelineName:
+    Description: CodePipeline Name
+    Export:
+      Name: !Join ["", [!Ref "AWS::StackName", "CodePipelineName"]]
+    Value: !Ref CodePipeline

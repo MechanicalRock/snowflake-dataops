@@ -1,0 +1,54 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "snowflake-admin"
+  },
+  {
+    "ParameterKey": "CodePipelineS3BucketName",
+    "ParameterValue": "snowflake-admin-codepipeline-bucket"
+  },
+  {
+    "ParameterKey": "CloudFormationDeployActionRoleName",
+    "ParameterValue": "snowflake-admin-cloudformation-deploy-role"
+  },
+  {
+    "ParameterKey": "CodePipelineRoleName",
+    "ParameterValue": "snowflake-admin-codepipeline-role"
+  },
+  {
+    "ParameterKey": "CodePipelineName",
+    "ParameterValue": "snowflake-admin-pipeline"
+  },
+  {
+    "ParameterKey": "StageAdministerPipelineStackName",
+    "ParameterValue": "snowflake-admin-administer-pipeline-stack"
+  },
+  {
+    "ParameterKey": "SnowflakeAccount",
+    "ParameterValue": "<ACCOUNTNAME>.<REGION>"
+  },
+  {
+    "ParameterKey": "SnowflakeUsername",
+    "ParameterValue": "Snowflake_admin_pipeline"
+  },
+  {
+    "ParameterKey": "SnowflakeWarehouse",
+    "ParameterValue": "Snowflake_admin_pipeline"
+  },
+  {
+    "ParameterKey": "SnowflakeMigrationDatabaseName",
+    "ParameterValue": "Snowflake_admin_DB_MIGRATION_PLAN"
+  },
+  {
+    "ParameterKey": "SnowflakeRole",
+    "ParameterValue": "Snowflake_admin_pipeline"
+  },
+  {
+    "ParameterKey": "CodeBuildRoleName",
+    "ParameterValue": "snowflake-admin-codebuild-role"
+  },
+  {
+    "ParameterKey": "CodeBuildProjectBuildSnowflakeDocker",
+    "ParameterValue": "snowflake-docker"
+  }
+]

@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 18
+      python: 3.7
+    commands:
+      - export SQITCH_PASSWORD=$(aws secretsmanager get-secret-value --secret-id snowflake/$SNOWFLAKE_USER --query SecretString --output text)
+      - export SNOWSQL_PWD=$SQITCH_PASSWORD
+      - apt-get update && apt-get install jq -y --no-install-recommends
+
+  build:
+    commands:
+      - ls -la
+      - pwd
+      - cd snowflake/schemas
+      - export SNOWSQL_REGION=$REGION
+      - sqitch target add snowflake-admin-pipeline "db:snowflake://$SNOWFLAKE_USER@$SNOWFLAKE_ACCOUNT/$SNOWFLAKE_MIGRATION_DB_NAME?Driver=SnowflakeDSIIDriver;warehouse=$SNOWFLAKE_WAREHOUSE;role=$SNOWFLAKE_ROLE"
+      - sqitch deploy snowflake-admin-pipeline
+      - sqitch verify snowflake-admin-pipeline
