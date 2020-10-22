@@ -24,7 +24,7 @@ alter user pipeline_sys_user set rsa_public_key_2='MIIBIjANBgkqh...';
 ```
   - <The arn to the secrets manager that holds Snowflake Password>
 ```
-3. Create other Snowflake resources including: SnowflakeMigrationDatabaseName, SnowflakeWarehouse and SnowflakeRole
+5. Create other Snowflake resources including: SnowflakeMigrationDatabaseName, SnowflakeWarehouse and SnowflakeRole
 ```
 Create database pipeline_db_migration_plan;
 
@@ -38,7 +38,7 @@ GRANT USAGE ON WAREHOUSE pipeline_warehouse TO ROLE pipeline_role;
 grant role SYSADMIN to role pipeline_role;
 
 ```
-4. Update both parameter files pipeline/aws_seed-cli-parameters.json and aws_seed.json 
+6. Update both parameter files pipeline/aws_seed-cli-parameters.json and aws_seed.json 
 
 ```
  "SnowflakeUsername": "pipeline_sys_user",
@@ -66,7 +66,7 @@ grant role SYSADMIN to role pipeline_role;
   }
 ```
 
-5. Deploy
+7. Deploy
 
 
 
