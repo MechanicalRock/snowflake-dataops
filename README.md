@@ -17,7 +17,7 @@ To get started you will need to follow below steps:
 openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8
 Enter a password
 openssl rsa -in rsa_key.p8 -pubout -out rsa_key.pub
-Enter your previous pass
+Enter your password again
 ```
 
 2. Create a snowflake service user and assign RSA public key to it
@@ -43,11 +43,11 @@ grant all on database pipeline_db_migration_plan to role pipeline_role;
 CREATE WAREHOUSE pipeline_warehouse;
 GRANT USAGE ON WAREHOUSE pipeline_warehouse TO ROLE pipeline_role;
 
-<!-- Ideally you only wanna grant permissions that your pipeline needs. Granting SYSADMIN is not encouraged  -->
+<!-- Ideally you only want to grant permissions that your pipeline requires. Granting SYSADMIN is not encouraged  -->
 grant role SYSADMIN to role pipeline_role;
 
 ```
-6. Update both parameter files pipeline/aws_seed-cli-parameters.json and aws_seed.json 
+6. Update both parameter files pipeline/aws_seed-cli-parameters.json and aws_seed.json to match resources you created in snowflake
 
 ```
  "SnowflakeUsername": "pipeline_sys_user",
@@ -79,7 +79,7 @@ grant role SYSADMIN to role pipeline_role;
 
 
 
-
+<br>
 
 This repo uses Inception Pipeline for creating CI/CD pattern using AWS developer tools. Please refer to below links for more details:
 
