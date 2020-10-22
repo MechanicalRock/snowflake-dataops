@@ -2,6 +2,15 @@
 
 This repo includes a dataOps approach to deploy changes into Snowflake using AWS Developer tools.
 
+Services used: 
+1. CodeCommit
+2. CodeBuild
+3. CodePipeline
+4. Cloudformation
+5. Flyway?
+
+## Getting started
+
 To get started you will need to follow below steps:
 1. Create an encrypted RSA public and private key. Type below two commands in your command line
 ```
@@ -71,12 +80,6 @@ grant role SYSADMIN to role pipeline_role;
 
 
 
-Services used: 
-1. CodeCommit
-2. CodeBuild
-3. CodePipeline
-4. Cloudformation
-5. Flyway?
 
 This repo uses Inception Pipeline for creating CI/CD pattern using AWS developer tools. Please refer to below links for more details:
 
