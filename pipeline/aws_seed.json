@@ -1,16 +1,16 @@
 {
   "Parameters": {
-    "ProjectName": "snowflake-admin",
-    "CodePipelineS3BucketName": "snowflake-admin-codepipeline-bucket",
-    "CloudFormationDeployActionRoleName": "snowflake-admin-cloudformation-deploy-role",
-    "CodePipelineRoleName": "snowflake-admin-codepipeline-role",
-    "CodePipelineName": "snowflake-admin-pipeline",
-    "StageAdministerPipelineStackName": "snowflake-admin-administer-pipeline-stack",
+    "ProjectName": "snowflake-dataops",
+    "CodePipelineS3BucketName": "snowflake-dataops-codepipeline-bucket",
+    "CloudFormationDeployActionRoleName": "snowflake-dataops-cloudformation-deploy-role",
+    "CodePipelineRoleName": "snowflake-dataops-codepipeline-role",
+    "CodePipelineName": "snowflake-dataops-pipeline",
+    "StageAdministerPipelineStackName": "snowflake-dataops-administer-pipeline-stack",
     "SnowflakeAccount": "<ACCOUNTNAME>.<REGION>",
-    "SnowflakeUsername": "snowflake_admin_pipeline",
-    "SnowflakeMigrationDatabaseName": "snowflake_admin_DB_MIGRATION_PLAN",
-    "SnowflakeWarehouse": "snowflake_admin_pipeline",
-    "SnowflakeRole": "snowflake_admin_pipeline",
+    "SnowflakeUsername": "pipeline_sys_user",
+    "SnowflakeMigrationDatabaseName": "pipeline_db_migration_plan",
+    "SnowflakeWarehouse": "pipeline_warehouse",
+    "SnowflakeRole": "pipeline_role",
     "CodeBuildRoleName": "snowflake-admin-codebuild-role",
     "CodeBuildProjectBuildSnowflakeDocker": "snowflake-docker"
   }

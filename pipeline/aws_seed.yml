@@ -401,7 +401,7 @@ Resources:
                 Action: 
                   - "secretsmanager:GetSecretValue"
                 Resource: 
-                  - <The arn to the secrets manager that holds Snowflake Password>
+                  - <The arn to the secrets manager that holds Snowflake encryption password>
 
   CodeBuildProjectDeploySnowflake:
     Type: "AWS::CodeBuild::Project"

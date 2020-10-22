@@ -1,27 +1,27 @@
 [
   {
     "ParameterKey": "ProjectName",
-    "ParameterValue": "snowflake-admin"
+    "ParameterValue": "snowflake-dataops"
   },
   {
     "ParameterKey": "CodePipelineS3BucketName",
-    "ParameterValue": "snowflake-admin-codepipeline-bucket"
+    "ParameterValue": "snowflake-dataops-codepipeline-bucket"
   },
   {
     "ParameterKey": "CloudFormationDeployActionRoleName",
-    "ParameterValue": "snowflake-admin-cloudformation-deploy-role"
+    "ParameterValue": "snowflake-dataops-cloudformation-deploy-role"
   },
   {
     "ParameterKey": "CodePipelineRoleName",
-    "ParameterValue": "snowflake-admin-codepipeline-role"
+    "ParameterValue": "snowflake-dataops-codepipeline-role"
   },
   {
     "ParameterKey": "CodePipelineName",
-    "ParameterValue": "snowflake-admin-pipeline"
+    "ParameterValue": "snowflake-dataops-pipeline"
   },
   {
     "ParameterKey": "StageAdministerPipelineStackName",
-    "ParameterValue": "snowflake-admin-administer-pipeline-stack"
+    "ParameterValue": "snowflake-dataops-administer-pipeline-stack"
   },
   {
     "ParameterKey": "SnowflakeAccount",
@@ -29,23 +29,23 @@
   },
   {
     "ParameterKey": "SnowflakeUsername",
-    "ParameterValue": "Snowflake_admin_pipeline"
+    "ParameterValue": "pipeline_sys_user"
   },
   {
     "ParameterKey": "SnowflakeWarehouse",
-    "ParameterValue": "Snowflake_admin_pipeline"
+    "ParameterValue": "pipeline_warehouse"
   },
   {
     "ParameterKey": "SnowflakeMigrationDatabaseName",
-    "ParameterValue": "Snowflake_admin_DB_MIGRATION_PLAN"
+    "ParameterValue": "pipeline_db_migration_plan"
   },
   {
     "ParameterKey": "SnowflakeRole",
-    "ParameterValue": "Snowflake_admin_pipeline"
+    "ParameterValue": "pipeline_role"
   },
   {
     "ParameterKey": "CodeBuildRoleName",
-    "ParameterValue": "snowflake-admin-codebuild-role"
+    "ParameterValue": "snowflake-dataops-codebuild-role"
   },
   {
     "ParameterKey": "CodeBuildProjectBuildSnowflakeDocker",
