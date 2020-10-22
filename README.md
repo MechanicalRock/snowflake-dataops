@@ -2,7 +2,7 @@
 
 This repo includes a dataOps approach to deploy changes into Snowflake using AWS Developer tools.
 
-To implement your dataOps with Snowflake using this codebase please follow below steps:
+To get started you will need to follow below steps:
 1. Create an encrypted RSA public and private key. Type below two commands in your command line
 ```
 openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8
