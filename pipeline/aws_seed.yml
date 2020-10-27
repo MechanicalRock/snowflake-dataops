@@ -510,6 +510,16 @@ Resources:
                 - Name: !Join ["", [!Ref ProjectName, "Source"]]
               RunOrder: 10
 Outputs:
+  CodeCommitRepositoryArn:
+    Description: CodeCommit Arn
+    Export:
+      Name: !Join ['', [!Ref 'AWS::StackName', 'CodeCommitRepositoryArn']]
+    Value: !GetAtt CodeCommitRepository.Arn
+  CodeCommitRepositoryCloneUrlHttp:
+    Description: CodeCommit CloneUrlHttp
+    Export:
+      Name: !Join ['', [!Ref 'AWS::StackName', 'CodeCommitRepositoryCloneUrlHttp']]
+    Value: !GetAtt CodeCommitRepository.CloneUrlHttp
   CodePipelineBucketArn:
     Description: CodePipeline S3 Bucket Arn
     Export:
