@@ -11,7 +11,7 @@
     "SnowflakeMigrationDatabaseName": "pipeline_db_migration_plan",
     "SnowflakeWarehouse": "pipeline_warehouse",
     "SnowflakeRole": "pipeline_role",
-    "CodeBuildRoleName": "snowflake-admin-codebuild-role",
+    "CodeBuildRoleName": "snowflake-dataops-codebuild-role",
     "CodeBuildProjectBuildSnowflakeDocker": "snowflake-docker"
   }
 }

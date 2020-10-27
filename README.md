@@ -35,15 +35,16 @@ alter user pipeline_sys_user set rsa_public_key_2='MIIBIjANBgkqh...';
 ```
 5. Create other Snowflake resources including: SnowflakeMigrationDatabaseName, SnowflakeWarehouse and SnowflakeRole
 ```
-Create database pipeline_db_migration_plan;
+CREATE DATABASE pipeline_db_migration_plan;
 
-Create role pipeline_role;
-Grant role pipeline_role to user pipeline_sys_user;
-grant all on database pipeline_db_migration_plan to role pipeline_role;
+CREATE ROLE pipeline_role;
+GRANT ROLE pipeline_role TO USER pipeline_sys_user;
+GRANT ALL ON DATABASE pipeline_db_migration_plan TO ROLE pipeline_role;
 CREATE WAREHOUSE pipeline_warehouse;
 GRANT USAGE ON WAREHOUSE pipeline_warehouse TO ROLE pipeline_role;
+GRANT ALL ON SCHEMA public TO ROLE pipeline_role;
 
-<!-- Ideally you only want to grant permissions that your pipeline requires. Granting SYSADMIN is not encouraged  -->
+// Ideally you only want to grant permissions that your pipeline requires. Granting SYSADMIN is not encouraged
 grant role SYSADMIN to role pipeline_role;
 
 ```
