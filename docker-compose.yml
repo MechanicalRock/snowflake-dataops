@@ -6,9 +6,9 @@ services:
       - ./sql:/flyway/sql
       - ./conf:/flyway/conf
       - ./keys:/flyway/keys
-    command: migrate -url="jdbc:snowflake://mechanicalrock.ap-southeast-2.snowflakecomputing.com/?db=pipeline_db_migration_plan&warehouse=pipeline_warehouse&role=pipeline_role&user=pipeline_sys_user&authenticator=snowflake_jwt&private_key_file=/flyway/keys/rsa_key.p8"
+    command: migrate
 
-  snowflake:
+  flyway-aws-cli:
       build:
           context: .
           dockerfile: Dockerfile
@@ -16,4 +16,4 @@ services:
         - ./sql:/flyway/sql
         - ./conf:/flyway/conf
         - ./keys:/flyway/keys
-      command: migrate -url="jdbc:snowflake://mechanicalrock.ap-southeast-2.snowflakecomputing.com/?db=pipeline_db_migration_plan&warehouse=pipeline_warehouse&role=pipeline_role&user=pipeline_temp_user&password=${SNOWFLAKE_PASSWORD}"
+      command: migrate

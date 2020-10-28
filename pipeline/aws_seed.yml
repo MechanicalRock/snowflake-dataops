@@ -50,8 +50,10 @@ Resources:
 
   CodePipelineBucket:
     Type: "AWS::S3::Bucket"
+    DependsOn:
+      - "CloudFormationDeployActionRole"
     Properties:
-      BucketName: !Sub "${CodePipelineS3BucketName}-${AWS::AccountId}-${AWS::Region}"
+      BucketName: !Sub "${CodePipelineS3BucketName}-${AWS::AccountId}"
 
   CodePipelineBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -63,8 +65,8 @@ Resources:
           - Action: ["s3:*"]
             Effect: Allow
             Resource:
-              - !Sub arn:aws:s3:::${CodePipelineS3BucketName}
-              - !Sub arn:aws:s3:::${CodePipelineS3BucketName}/*
+              - !Sub arn:aws:s3:::${CodePipelineS3BucketName}-${AWS::AccountId}
+              - !Sub arn:aws:s3:::${CodePipelineS3BucketName}-${AWS::AccountId}/*
             Principal:
               AWS:
                 - !Sub "arn:aws:iam::${AWS::AccountId}:root"
@@ -232,6 +234,7 @@ Resources:
                   - 'codecommit:DeleteRepository'
                   - 'codecommit:GetRepository'
                   - 'codecommit:ListRepositories'
+                  - 'codecommit:GetBranch'
                   - 'codecommit:UpdateRepositoryDescription'
                   - 'codecommit:UpdateRepositoryName'
                 Effect: Allow
@@ -302,6 +305,7 @@ Resources:
                   - "kms:GenerateDataKey*"
                   - "kms:ReEncrypt*"
                   - "iam:PassRole"
+                  - 'codecommit:*'
                 Resource: "*"
                 Effect: Allow
             Version: 2012-10-17
@@ -412,7 +416,7 @@ Resources:
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${CodeBuildProjectBuildSnowflakeDocker}:latest"
+        Image: "mechanicalrock/flyway-aws-cli:1.0"
         EnvironmentVariables:
           - Name: REGION
             Value: !Ref AWS::Region
