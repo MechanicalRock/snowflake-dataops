@@ -6,11 +6,17 @@ phases:
       docker: 18
       python: 3.7
     commands:
-      - export SNOWFLAKE_PASSWORD=$(aws secretsmanager get-secret-value --secret-id snowflake/$SNOWFLAKE_USER --query SecretString --output text)
-      - apt-get update && apt-get install jq -y --no-install-recommends
+      - aws secretsmanager get-secret-value --secret-id snowflake/$SNOWFLAKE_USER --query 'SecretString' --output text > keys/rsa_key.p8
 
   build:
     commands:
       - ls -la
-      - pwd
-      - flyway migrate -url="jdbc:snowflake://${SnowflakeAccount}.snowflakecomputing.com/?db=${SnowflakeMigrationDatabaseName}&warehouse=${SnowflakeWarehouse}&role=${SnowflakeRole}&user=${SNOWFLAKE_USER}&password=${SNOWFLAKE_PASSWORD}"
+      - rm -rf /flyway/conf/
+      - rm -rf /flyway/sql/
+      - ls -la
+      - cp -r conf /flyway/conf
+      - cp -r sql /flyway/sql
+      - cp -r keys /flyway/keys
+      - cd /flyway
+      - ls -la
+      - flyway migrate -url="jdbc:snowflake://${SNOWFLAKE_ACCOUNT}.snowflakecomputing.com/?db=${SNOWFLAKE_MIGRATION_DB_NAME}&warehouse=${SNOWFLAKE_WAREHOUSE}&role=${SNOWFLAKE_ROLE}&user=${SNOWFLAKE_USER}&authenticator=snowflake_jwt&private_key_file=/flyway/keys/rsa_key.p8"

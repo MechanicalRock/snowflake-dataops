@@ -2,7 +2,7 @@
 set -e
 reset
 
-STACK_NAME=snowflake-admin-administer-pipeline-stack
+STACK_NAME=snowflake-dataops-administer-pipeline-stack
 
 echo "Create the initial CloudFormation Stack"
 aws cloudformation create-stack --stack-name ${STACK_NAME} --template-body file://pipeline/aws_seed.yml --parameters file://pipeline/aws_seed-cli-parameters.json --capabilities "CAPABILITY_NAMED_IAM"
