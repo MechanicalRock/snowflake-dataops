@@ -37,10 +37,10 @@ Parameters:
   CodeBuildRoleName:
     Type: String
     Description: Default role name for codebuild
-  CodeBuildProjectBuildSnowflakeDocker:
+  SnowflakeSecretsManagerARN:
     Type: String
-    Description: Name of the codebuild project used to build snowsql cli docker image
-  
+    Description: The arn to secrets manager where it holds your snowflake private key
+
 Resources:
   CodeCommitRepository:
     Type: 'AWS::CodeCommit::Repository'
@@ -405,7 +405,7 @@ Resources:
                 Action: 
                   - "secretsmanager:GetSecretValue"
                 Resource: 
-                  - <The arn to the secrets manager that holds Snowflake encryption password>
+                  - !Ref SnowflakeSecretsManagerARN
 
   CodeBuildProjectDeploySnowflake:
     Type: "AWS::CodeBuild::Project"

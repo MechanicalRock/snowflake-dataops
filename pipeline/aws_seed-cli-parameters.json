@@ -48,7 +48,7 @@
     "ParameterValue": "snowflake-dataops-codebuild-role"
   },
   {
-    "ParameterKey": "CodeBuildProjectBuildSnowflakeDocker",
-    "ParameterValue": "snowflake-docker"
+    "ParameterKey": "SnowflakeSecretsManagerARN",
+    "ParameterValue": "<The arn to the secrets manager that holds Snowflake private key>"
   }
 ]

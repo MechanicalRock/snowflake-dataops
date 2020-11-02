@@ -12,6 +12,6 @@
     "SnowflakeWarehouse": "pipeline_warehouse",
     "SnowflakeRole": "pipeline_role",
     "CodeBuildRoleName": "snowflake-dataops-codebuild-role",
-    "CodeBuildProjectBuildSnowflakeDocker": "snowflake-docker"
+    "SnowflakeSecretsManagerARN": "<The arn to the secrets manager that holds Snowflake private key>"
   }
 }
