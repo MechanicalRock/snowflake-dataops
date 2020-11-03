@@ -11,4 +11,4 @@ Services used:
 
 ## Getting started
 
-To get started download this repo and follow the steps in below blogpost: https://mechanicalrock.github.io/2020/10/27/snowflake-dataOps.html
+To get started download this repo and follow the steps in below blogpost: https://mechanicalrock.github.io/2020/11/03/snowflake-dataOps.html
